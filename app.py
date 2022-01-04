@@ -1,31 +1,15 @@
-import threading
-
 from flask import Flask, jsonify, abort, request
-
-app = Flask(__name__)
 from datetime import datetime
+import threading
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-# from pymongo import MongoClient
 import pymongo
 from mongoLib import *
 
+app = Flask(__name__)
 
-# tasks = [
-#     {
-#         'id': 1,
-#         'title': u'Buy groceries',
-#         'description': u'Milk, Cheese, Pizza, Fruit, Tylenol',
-#         'done': False
-#     },
-#     {
-#         'id': 2,
-#         'title': u'Learn Python',
-#         'description': u'Need to find a good Python tutorial on the web',
-#         'done': False
-#     }
-# ]
+
 #
 # def give_data():
 #     data = {
@@ -87,21 +71,35 @@ from mongoLib import *
 #
 # data_my = give_data()
 #
+
+def conecting_to_DB(name_DB, name_collection, port=27017):
+    client = pymongo.MongoClient(port=port)
+    DB = client[name_DB]
+    collection_name = DB[name_collection]
+    return collection_name
+
+
 def processing(data_my):
+    """
+    Processing data for uploading to the database
+    :param data_my:
+    :return:
+    """
+    # ----Sorting by time field----
     data_x = data_my['data']['x']
     data_y = data_my['data']['y']
     data_x = [{'date': datetime.timestamp(datetime.strptime(x['date'], "%Y-%m-%d")), 'value': x['value']} for x in
               data_x]
-
-    data_x.sort(key=lambda x: x['date'])
-
     data_y = [{'date': datetime.timestamp(datetime.strptime(y['date'], "%Y-%m-%d")), 'value': y['value']} for y in
               data_y]
 
+    data_x.sort(key=lambda x: x['date'])
     data_y.sort(key=lambda y: y['date'])
+    # ----------------------------
     # print(data_x)
     # print(data_y)
 
+    # ----Data dictionary----
     data_information = {}
     data_information['user_id'] = data_my['user_id']
     data_information["x_data_type"] = data_my['data']["x_data_type"]
@@ -116,6 +114,8 @@ def processing(data_my):
                 data_col[str(help_x[0]['date'])] = {'x': help_x[0]['value'], 'y': help_y[0]['value']}
             else:
                 print(0)
+    # -----------------------
+    # ----Plot points----
     # print(data_information)
     # df = pd.DataFrame(
     #     {
@@ -128,9 +128,10 @@ def processing(data_my):
     # plt.xlabel('X')
     # plt.ylabel('Y')
     # plt.show()
-    client = pymongo.MongoClient(port=27017)
-    DB = client["challenge"]
-    collection_name = DB["Correlation_data"]
+    # ------------------
+    # ----Connect with database----
+    collection_name = conecting_to_DB("challenge", "Correlation_data")
+    # -------------------------------
     result = find_document(collection_name, {'user_id': data_information['user_id']})
 
     if result:
@@ -142,7 +143,7 @@ def processing(data_my):
 
 
 #
-@app.route('/test', methods=['POST'])
+@app.route('/calculate', methods=['POST'])
 def get_tasks():  # Получил данные
     data = request.json
     print(data)
@@ -152,14 +153,23 @@ def get_tasks():  # Получил данные
     # return jsonify({'tasks': tasks})
 
 
-#
-#
-# @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['GET'])
-# def get_task(task_id):
-#     task = filter(lambda t: t['id'] == task_id, tasks)
-#     if len(task) == 0:
-#         abort(404)
-#     return jsonify({'task': task[0]})
+# x_data_type=<string:x_data_type>&y_data_type=<string:y_data_type>&user_id=<int:user_id>
+@app.route('/correlation', methods=['GET'])
+def get_task():
+    x_data_type = request.args.get('x_data_type', default='', type=str)
+    y_data_type = request.args.get('y_data_type', default='', type=str)
+    user_id = request.args.get('user_id', default=-1, type=int)
+    collection_name = conecting_to_DB("challenge", "Correlation_data")
+    data = find_document(collection_name, {'user_id': user_id, 'x_data_type': x_data_type, 'y_data_type': y_data_type})
+    if len(data) == 0:
+        abort(404)
+        return 'Error'
+    del data['_id']
+    print(type(data))
+    print(data)
+    return jsonify({"answ": data})
+
+
 #
 #
 # @app.route('/')
