@@ -17,4 +17,8 @@ b['x'] = [
     }
 ]
 
-print(a)
+rc = '2'
+if type(rc) == int:
+    print(1)
+else:
+    raise TypeError('Bad type!')
