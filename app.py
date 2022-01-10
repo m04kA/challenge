@@ -6,8 +6,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from mongoLib import *
+from scipy import stats
 
 app = Flask(__name__)
+
 
 def conecting_to_DB(name_DB, name_collection, port=27017):
     client = pymongo.MongoClient(port=port)
@@ -98,7 +100,9 @@ def processing(data_my):
     # ----Connect with database----
     collection_name = conecting_to_DB("challenge", "Correlation_data")
     # -------------------------------
-    result = find_document(collection_name, {'user_id': data_information['user_id']})
+    result = find_document(collection_name,
+                           {'user_id': data_information['user_id'], 'x_data_type': data_information['x_data_type'],
+                            'y_data_type': data_information['y_data_type']})
 
     if result:
         data_information['data'] = result['data'] | data_information['data']
@@ -140,13 +144,14 @@ def get_task():
             'y': values_y
         }
     )
+    pearson_value, pearson_p_value = stats.pearsonr(df['x'], df['y'])
     answer = {
         "user_id": data['user_id'],
         "x_data_type": data["x_data_type"],
         "y_data_type": data["y_data_type"],
         "correlation": {
-            "value": df['x'].corr(df['y']),
-            "p_value": "???",
+            "value": pearson_value,
+            "p_value": pearson_p_value,
         }
     }
     return jsonify(answer)
