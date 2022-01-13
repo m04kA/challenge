@@ -100,40 +100,7 @@ def processing(data_my: dict):
         data_x = data_x.sort_values(by="date")
         data_col['values'][key] = [{"date": str(row['date'])[:10], "value": row['values']} for ind, row in
                                    data_x.iterrows()]
-
-        # data_y = pd.DataFrame(
-    #     {"date": [data_my['data']['y'][ind]['date'] for ind in range(len(data_my['data']['y']))],
-    #      "values": [data_my['data']['y'][ind]['value'] for ind in range(len(data_my['data']['y']))]})
-    # try:
-    #     data_y['date'] = pd.to_datetime(data_y['date'], yearfirst=True, format='%Y-%m-%d')
-    # except Exception as exept:
-    #     print(f'Wrong date - {exept}')
-
-    # data_y = data_y.sort_values(by="date")
     # ----------------------------
-
-    # ----Data dictionary----
-
-    # for ind in range(data_x.count()[0]):
-    #     if not data_x.loc[ind, 'date'] in data_col:
-    #         help_y = data_y[
-    #             data_y['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda y: y['date'] == el['date'], data_y))
-    #         help_x = data_x[
-    #             data_x['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda x: x['date'] == el['date'], data_x))
-    #
-    #         if len(help_y) >= 1 and len(help_x) >= 1:
-    #             # print(f'{help_y.index}  --  {help_y.index[-1]}')
-    #             # print(f'{help_x.index}  --  {help_x.index[-1]}')
-    #             data_col[str(help_x['date'].values[-1])[:10]] = \
-    #                 {
-    #                     'x': help_x['values'].values[-1],
-    #                     'y': help_y['values'].values[-1]
-    #                 }
-    #         else:
-    #             # print(0)
-    #             continue
-
-    # -----------------------
     # plot_with_points(data_information) # Plot with points
     # ----Connect with database----
     collection_name = conecting_to_DB("challenge", "Correlation_data")
@@ -145,9 +112,7 @@ def processing(data_my: dict):
         update_document(collection_name, {'_id': result['_id']}, {'data': data_information['data']})
     else:
         insert_document(collection_name, data_information)
-    # print(result)
     flag = "All good"
-    # exit(0)
     # -------------------------------
 
 
@@ -225,18 +190,6 @@ def get_task():
     if not data:
         abort(404)
     del data['_id']
-    # values_x = []
-    # values_y = []
-    # for key in data['data'].keys():
-    #     values_x.append(data['data'][key]['x'])
-    #     values_y.append(data['data'][key]['y'])
-    # df = pd.DataFrame(
-    #     {
-    #         'x': values_x,
-    #         'y': values_y
-    #     }
-    # )
-    # pearson_value, pearson_p_value = stats.pearsonr(df['x'], df['y'])
     global rezalt, flag
     flag = ""
     rezalt = [2, 2]

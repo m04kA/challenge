@@ -3,7 +3,7 @@
   "data": {
     "x_data_type": "weight_on_x",
     "y_data_type": "height_on_y",
-    "x": [
+    "weight_on_x": [
       {
         "date": "2012-11-05",
         "value": 125.4
@@ -29,7 +29,7 @@
         "value": 155.4
       }
     ],
-    "y": [
+    "height_on_y": [
       {
         "date": "2022-11-01",
         "value": 75.2
