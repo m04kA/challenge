@@ -36,47 +36,81 @@ def plot_with_points(data):
     plt.show()
 
 
-def processing(data_my):
+def to_type_date(date):
+    """
+    This funk for delete row with bad date.
+    :param date:
+    :return: clear & good data with correct date
+    """
+    try:
+        date['date'] = pd.to_datetime(date['date'], yearfirst=True, format='%Y-%m-%d')
+    except ValueError as ex:
+        ex = str(ex)
+        wrong_key = ex[ex.find("data") + len("data") + 1: ex.find("doesn") - 1]
+        date.drop(date.loc[date['date'] == wrong_key].index, inplace=True)
+        print(f'Wrong date - {wrong_key}')
+        to_type_date(date)
+    return date
+
+
+def processing(data_my: dict):
     """
     Processing data for uploading to the database
     :param data_my:
     :return:
     """
-    # ----Sorting by time field----
-    data_x = pd.DataFrame(
-        {"date": [data_my['data']['x'][ind]['date'] for ind in range(len(data_my['data']['x']))],
-         "values": [data_my['data']['x'][ind]['value'] for ind in range(len(data_my['data']['x']))]})
-    try:
-        data_x['date'] = pd.to_datetime(data_x['date'], yearfirst=True, format='%Y-%m-%d')
-    except Exception as exept:
-        print(f'Wrong date - {exept}')
+    global flag
 
-    data_y = pd.DataFrame(
-        {"date": [data_my['data']['y'][ind]['date'] for ind in range(len(data_my['data']['y']))],
-         "values": [data_my['data']['y'][ind]['value'] for ind in range(len(data_my['data']['y']))]})
-    try:
-        data_y['date'] = pd.to_datetime(data_y['date'], yearfirst=True, format='%Y-%m-%d')
-    except Exception as exept:
-        print(f'Wrong date - {exept}')
-
-    data_x = data_x.sort_values(by="date")
-    data_y = data_y.sort_values(by="date")
-    # ----------------------------
-
-    # ----Data dictionary----
+    # ---- Checking user_id ----
     data_information = {}
     if type(data_my['user_id']) == int:
         data_information['user_id'] = data_my['user_id']
     else:
+        flag = "User`s id is not int."
         raise TypeError('User`s id is not int.')
-    if type(data_my['data']["x_data_type"]) == str and type(data_my['data']["y_data_type"]) == str and len(
-            data_my['data']["x_data_type"]) * len(data_my['data']["y_data_type"]) != 0:
-        data_information["x_data_type"] = data_my['data']["x_data_type"]
-        data_information["y_data_type"] = data_my['data']["y_data_type"]
-    else:
-        raise ValueError('Wrong value in x & y data type.')
+    # ---------------------
+
+    # ---- Checking the availability of data ----
+    if not 'data' in data_my:
+        flag = "There is no data."
+        raise ValueError("There is no data.")
+    # -----------------------------
+
     data_information['data'] = {}
     data_col = data_information['data']
+
+    # ---- Checking data types ----
+    mass_names_dict_values = []
+    for key in data_my['data'].keys():
+        if type(data_my['data'][key]) == str:
+            name_dict_values = key.split('_')[0]
+            if (name_dict_values in data_my['data']) and not (name_dict_values in mass_names_dict_values):
+                if len(data_my['data'][name_dict_values]) != 0:
+                    mass_names_dict_values.append(name_dict_values)
+                    data_col[key] = data_my['data'][key]
+    # ---------------------
+
+    # ----Sorting by time field----
+    for key in mass_names_dict_values:
+        data_x = pd.DataFrame(
+            {"date": [data_my['data'][key][ind]['date'] for ind in range(len(data_my['data'][key]))],
+             "values": [data_my['data'][key][ind]['value'] for ind in range(len(data_my['data'][key]))]})
+        data_x = to_type_date(data_x)
+        data_x = data_x.sort_values(by="date")
+
+    # data_y = pd.DataFrame(
+    #     {"date": [data_my['data']['y'][ind]['date'] for ind in range(len(data_my['data']['y']))],
+    #      "values": [data_my['data']['y'][ind]['value'] for ind in range(len(data_my['data']['y']))]})
+    # try:
+    #     data_y['date'] = pd.to_datetime(data_y['date'], yearfirst=True, format='%Y-%m-%d')
+    # except Exception as exept:
+    #     print(f'Wrong date - {exept}')
+
+    # data_y = data_y.sort_values(by="date")
+    # ----------------------------
+
+    # ----Data dictionary----
+
     for ind in range(data_x.count()[0]):
         if not data_x.loc[ind, 'date'] in data_col:
             help_y = data_y[
@@ -99,7 +133,7 @@ def processing(data_my):
     # plot_with_points(data_information) # Plot with points
     # ----Connect with database----
     collection_name = conecting_to_DB("challenge", "Correlation_data")
-    # -------------------------------
+
     result = find_document(collection_name,
                            {'user_id': data_information['user_id'], 'x_data_type': data_information['x_data_type'],
                             'y_data_type': data_information['y_data_type']})
@@ -110,6 +144,9 @@ def processing(data_my):
     else:
         insert_document(collection_name, data_information)
     # print(result)
+    flag = "All good"
+    # exit(0)
+    # -------------------------------
 
 
 # http://127.0.0.1:5000//calculate
@@ -117,9 +154,12 @@ def processing(data_my):
 def get_tasks():  # Получил данные
     data = request.json
     print("POST working")
+    global flag
+    flag = ""
     my_thread = threading.Thread(target=processing, args=(data,))
     my_thread.start()
-    return 'All good'
+    my_thread.join()
+    return flag
 
 
 # http://127.0.0.1:5000/correlation?x_data_type=steps_on_x&y_data_type=steps_on_y&user_id=1
