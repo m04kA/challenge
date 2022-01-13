@@ -83,7 +83,7 @@ def processing(data_my: dict):
     mass_names_dict_values = []
     for key in data_my['data'].keys():
         if type(data_my['data'][key]) == str:
-            name_dict_values = key.split('_')[0]
+            name_dict_values = data_my['data'][key]
             if (name_dict_values in data_my['data']) and not (name_dict_values in mass_names_dict_values):
                 if len(data_my['data'][name_dict_values]) != 0:
                     mass_names_dict_values.append(name_dict_values)
@@ -91,14 +91,17 @@ def processing(data_my: dict):
     # ---------------------
 
     # ----Sorting by time field----
+    data_col['values'] = {}
     for key in mass_names_dict_values:
         data_x = pd.DataFrame(
             {"date": [data_my['data'][key][ind]['date'] for ind in range(len(data_my['data'][key]))],
              "values": [data_my['data'][key][ind]['value'] for ind in range(len(data_my['data'][key]))]})
         data_x = to_type_date(data_x)
         data_x = data_x.sort_values(by="date")
+        data_col['values'][key] = [{"date": str(row['date'])[:10], "value": row['values']} for ind, row in
+                                   data_x.iterrows()]
 
-    # data_y = pd.DataFrame(
+        # data_y = pd.DataFrame(
     #     {"date": [data_my['data']['y'][ind]['date'] for ind in range(len(data_my['data']['y']))],
     #      "values": [data_my['data']['y'][ind]['value'] for ind in range(len(data_my['data']['y']))]})
     # try:
@@ -111,32 +114,31 @@ def processing(data_my: dict):
 
     # ----Data dictionary----
 
-    for ind in range(data_x.count()[0]):
-        if not data_x.loc[ind, 'date'] in data_col:
-            help_y = data_y[
-                data_y['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda y: y['date'] == el['date'], data_y))
-            help_x = data_x[
-                data_x['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda x: x['date'] == el['date'], data_x))
+    # for ind in range(data_x.count()[0]):
+    #     if not data_x.loc[ind, 'date'] in data_col:
+    #         help_y = data_y[
+    #             data_y['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda y: y['date'] == el['date'], data_y))
+    #         help_x = data_x[
+    #             data_x['date'] == data_x.loc[ind, 'date']]  # list(filter(lambda x: x['date'] == el['date'], data_x))
+    #
+    #         if len(help_y) >= 1 and len(help_x) >= 1:
+    #             # print(f'{help_y.index}  --  {help_y.index[-1]}')
+    #             # print(f'{help_x.index}  --  {help_x.index[-1]}')
+    #             data_col[str(help_x['date'].values[-1])[:10]] = \
+    #                 {
+    #                     'x': help_x['values'].values[-1],
+    #                     'y': help_y['values'].values[-1]
+    #                 }
+    #         else:
+    #             # print(0)
+    #             continue
 
-            if len(help_y) >= 1 and len(help_x) >= 1:
-                # print(f'{help_y.index}  --  {help_y.index[-1]}')
-                # print(f'{help_x.index}  --  {help_x.index[-1]}')
-                data_col[str(help_x['date'].values[-1])[:10]] = \
-                    {
-                        'x': help_x['values'].values[-1],
-                        'y': help_y['values'].values[-1]
-                    }
-            else:
-                # print(0)
-                continue
     # -----------------------
     # plot_with_points(data_information) # Plot with points
     # ----Connect with database----
     collection_name = conecting_to_DB("challenge", "Correlation_data")
 
-    result = find_document(collection_name,
-                           {'user_id': data_information['user_id'], 'x_data_type': data_information['x_data_type'],
-                            'y_data_type': data_information['y_data_type']})
+    result = find_document(collection_name, {'user_id': data_information['user_id']})
 
     if result:
         data_information['data'] = result['data'] | data_information['data']
@@ -147,6 +149,56 @@ def processing(data_my: dict):
     flag = "All good"
     # exit(0)
     # -------------------------------
+
+
+def create_pd_data(data, key):
+    mass_date = []
+    mass_value = []
+    for ind in range(len(data['values'][key])):
+        mass_date.append(data['values'][key][ind]['date'])
+        mass_value.append(data['values'][key][ind]['value'])
+    help_x = pd.DataFrame({
+        'date': mass_date,
+        'values': mass_value
+    })
+    return help_x
+
+
+def correlation(data: dict, x_data_type, y_data_type):
+    global rezalt, flag
+    true_data = {}
+    if (x_data_type in data.values()) and (y_data_type in data.values()):
+        data_x = create_pd_data(data, x_data_type)
+        data_y = create_pd_data(data, y_data_type)
+    else:
+        flag = "there are not x_data_type or y_data_type"
+        raise ValueError("there are not x_data_type or y_data_type")
+    for ind, row in data_x.iterrows():
+        help_x = data_x[data_x['date'] == row['date']]
+        help_y = data_y[data_y['date'] == row['date']]
+        if len(help_x) >= 1 and len(help_y) >= 1:
+            true_data[row['date']] = {
+                'x': help_x['values'].values[-1],
+                'y': help_y['values'].values[-1]
+            }
+    if len(true_data) == 0:
+        flag = "No date matches"
+        raise ValueError("No date matches")
+    values_x = []
+    values_y = []
+    for key_date in true_data.keys():
+        values_x.append(true_data[key_date]['x'])
+        values_y.append(true_data[key_date]['y'])
+    df = pd.DataFrame(
+        {
+            'x': values_x,
+            'y': values_y
+        }
+    )
+    pearson_value, pearson_p_value = stats.pearsonr(df['x'], df['y'])
+    rezalt[0] = pearson_value
+    rezalt[1] = pearson_p_value
+    flag = "All good"
 
 
 # http://127.0.0.1:5000//calculate
@@ -169,32 +221,42 @@ def get_task():
     y_data_type = request.args.get('y_data_type', default='', type=str)
     user_id = request.args.get('user_id', default=-1, type=int)
     collection_name = conecting_to_DB("challenge", "Correlation_data")
-    data = find_document(collection_name, {'user_id': user_id, 'x_data_type': x_data_type, 'y_data_type': y_data_type})
+    data = find_document(collection_name, {'user_id': user_id})
     if not data:
         abort(404)
     del data['_id']
-    values_x = []
-    values_y = []
-    for key in data['data'].keys():
-        values_x.append(data['data'][key]['x'])
-        values_y.append(data['data'][key]['y'])
-    df = pd.DataFrame(
-        {
-            'x': values_x,
-            'y': values_y
+    # values_x = []
+    # values_y = []
+    # for key in data['data'].keys():
+    #     values_x.append(data['data'][key]['x'])
+    #     values_y.append(data['data'][key]['y'])
+    # df = pd.DataFrame(
+    #     {
+    #         'x': values_x,
+    #         'y': values_y
+    #     }
+    # )
+    # pearson_value, pearson_p_value = stats.pearsonr(df['x'], df['y'])
+    global rezalt, flag
+    flag = ""
+    rezalt = [2, 2]
+    my_thread = threading.Thread(target=correlation, args=(data['data'], x_data_type, y_data_type,))
+    my_thread.start()
+    my_thread.join()
+
+    if flag == "All good":
+        answer = {
+            "user_id": data['user_id'],
+            "x_data_type": x_data_type,
+            "y_data_type": y_data_type,
+            "correlation": {
+                "value": rezalt[0],
+                "p_value": rezalt[1],
+            }
         }
-    )
-    pearson_value, pearson_p_value = stats.pearsonr(df['x'], df['y'])
-    answer = {
-        "user_id": data['user_id'],
-        "x_data_type": data["x_data_type"],
-        "y_data_type": data["y_data_type"],
-        "correlation": {
-            "value": pearson_value,
-            "p_value": pearson_p_value,
-        }
-    }
-    return jsonify(answer)
+        return jsonify(answer)
+    else:
+        return flag
 
 
 #

@@ -3,7 +3,9 @@
   "data": {
     "x_data_type": "steps_on_x",
     "y_data_type": "steps_on_y",
-    "x": [
+    "z_data_type": "steps_on_z",
+    "k_data_type": "steps_on_k",
+    "steps_on_x": [
       {
         "date": "2012-11-05",
         "value": 12.4
@@ -29,7 +31,7 @@
         "value": 15.4
       }
     ],
-    "y": [
+    "steps_on_k": [
       {
         "date": "2022-11-01",
         "value": 7.2
@@ -53,6 +55,32 @@
       {
         "date": "2018-11-03",
         "value": 15.4
+      }
+    ],
+    "steps_on_z": [
+      {
+        "date": "2022-11-01",
+        "value": 73.2
+      },
+      {
+        "date": "2022-11-03",
+        "value": 113.5
+      },
+      {
+        "date": "2022-11-03",
+        "value": 153.7
+      },
+      {
+        "date": "2020-11-03",
+        "value": 573.4
+      },
+      {
+        "date": "2019-11-03",
+        "value": 203.4
+      },
+      {
+        "date": "2018-11-03",
+        "value": 53.4
       }
     ]
   }
