@@ -36,21 +36,46 @@ def plot_with_points(data):
     plt.show()
 
 
-def to_type_date(date):
+def to_type_date(data):
     """
     This funk for delete row with bad date.
-    :param date:
+    :param data:
     :return: clear & good data with correct date
     """
     try:
-        date['date'] = pd.to_datetime(date['date'], yearfirst=True, format='%Y-%m-%d')
+        data['date'] = pd.to_datetime(data['date'], yearfirst=True, format='%Y-%m-%d')
     except ValueError as ex:
         ex = str(ex)
         wrong_key = ex[ex.find("data") + len("data") + 1: ex.find("doesn") - 1]
-        date.drop(date.loc[date['date'] == wrong_key].index, inplace=True)
+        data.drop(data.loc[data['date'] == wrong_key].index, inplace=True)
         print(f'Wrong date - {wrong_key}')
-        to_type_date(date)
-    return date
+        to_type_date(data)
+    return data
+
+
+def to_float_value(data):
+    """
+    This funk for delete row with bad value.
+    :param data:
+    :return: clear & good data with correct date
+    """
+
+    for ind, row in data.iterrows():
+        try:
+            row['values'] = float(row['values'])
+        except Exception as ex:
+            data.drop(ind, inplace=True)
+    data[['values']] = data[['values']].astype(float)
+    return data
+    # try:
+    #     data[['values']] = data[['values']].astype(float)
+    # except ValueError as ex:
+    #     ex = str(ex)
+    #     wrong_num = ex[ex.find(':') + 2:]
+    #     data.drop(data.loc[data['values'] == wrong_num].index, inplace=True)
+    #     print(f'Wrong date - {wrong_num}')
+    #     to_float_value(data)
+    # return data
 
 
 def processing(data_my: dict):
@@ -98,6 +123,7 @@ def processing(data_my: dict):
              "values": [data_my['data'][key][ind]['value'] for ind in range(len(data_my['data'][key]))]})
         data_x = to_type_date(data_x)
         data_x = data_x.sort_values(by="date")
+        data_x = to_float_value(data_x)
         data_col['values'][key] = [{"date": str(row['date'])[:10], "value": row['values']} for ind, row in
                                    data_x.iterrows()]
     # ----------------------------
