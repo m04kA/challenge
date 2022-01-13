@@ -14,3 +14,7 @@ I want show that if I do not know somethink I always can use googl.
 I create my http service by flask becouse it it's a little simpler than on django.
 
 For testing, I used Postman & MongoDB Compass. 
+
+
+If you want using my service you have to follow the rule:
+- The data_type value must match the key of these values.
