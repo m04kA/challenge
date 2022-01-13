@@ -67,15 +67,7 @@ def to_float_value(data):
             data.drop(ind, inplace=True)
     data[['values']] = data[['values']].astype(float)
     return data
-    # try:
-    #     data[['values']] = data[['values']].astype(float)
-    # except ValueError as ex:
-    #     ex = str(ex)
-    #     wrong_num = ex[ex.find(':') + 2:]
-    #     data.drop(data.loc[data['values'] == wrong_num].index, inplace=True)
-    #     print(f'Wrong date - {wrong_num}')
-    #     to_float_value(data)
-    # return data
+    
 
 
 def processing(data_my: dict):
