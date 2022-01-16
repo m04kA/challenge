@@ -6,6 +6,7 @@ If you want use it you need:
 - Pandas 1.3.5
 - Numpy 1.22.0.
 - Scipy 1.7.3
+- Python 3.10
 - Good mood :)
 
 I have studied a lot of information and had great pleasure in creating this small project.
