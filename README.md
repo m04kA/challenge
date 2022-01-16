@@ -1,4 +1,4 @@
-My http service!
+My http service! It need for getting Pearson correlation between 2 data arrays with date matching.
 
 If you want use it you need:
 - Flask 2.0.2
